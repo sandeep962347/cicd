@@ -1,0 +1,31 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+from pyspark.sql.streaming import StreamingQuery
+
+class KafkaConsumerHDFS:
+    def __init__(self):
+        spark = SparkSession.builder \
+            .appName("KafkaConsumer") \
+            .master("local[*]") \
+            .getOrCreate()
+        df = spark.readStream \
+            .format("kafka") \
+            .option("kafka.bootstrap.servers", "localhost:9092") \
+            .option("subscribe", "salesforceTCRM") \
+            .load() \
+            .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+        df.printSchema()
+        try:
+            ds = df.writeStream \
+                .queryName("memselct") \
+                .outputMode("append") \
+                .format("console") \
+                .start()
+        except TimeoutError as e:
+            print(e)
+
+if __name__ == "__main__":
+    KafkaConsumerHDFS()
+
+
+
